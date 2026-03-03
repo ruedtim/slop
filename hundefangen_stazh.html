@@ -844,7 +844,7 @@
         const DOG_EMOJIS = ['🐶', '🐩', '🦮', '🐕‍🦺', '🐕', '🦊'];
         const PLAYER_EMOJI = '🐕';
         const POWERUP_EMOJI = '🗂️';
-        const BARK_SOUNDS = ['Wuff im Park!', 'Gassi!', 'Wau vom Irchel!', 'Hechel...', 'Ruff!', 'Sichtung!'];
+        const BARK_SOUNDS = ['Wuff!', 'Wau wau!', 'Hechel...', 'Ruff!', 'Japs!', 'Wuff wuff!', 'Schnüffel...', 'Gassi!', '*schwanzwedel*', 'Kläff!', 'Wau!', '*hechel hechel*', 'Grrrr...', '*bell*', 'Yip!'];
         const CROW_CAWS = ['Kräh!', 'Kraa!', 'Krah krah!', 'Krrää!', 'Caw!', 'Krächz!'];
         const CROW_EMOJIS = ['🐦‍⬛'];
 
@@ -1505,8 +1505,16 @@
             state.score += 50;
             state.player.stamina = Math.min(100, state.player.stamina + 45);
 
-            showCatchEffect(pu.x, pu.y, '📎 Archiv-Boost');
-            showPointsPopup(pu.x, pu.y - 10, '+50 Aktenbonus');
+            // Temporärer Geschwindigkeitsboost
+            const originalSpeed = 4;
+            state.player.speed = originalSpeed * 1.25;
+            clearTimeout(state.player._speedTimeout);
+            state.player._speedTimeout = setTimeout(() => {
+                state.player.speed = originalSpeed;
+            }, 3000);
+
+            showCatchEffect(pu.x, pu.y, '� Archiv-Boost!');
+            showPointsPopup(pu.x, pu.y - 10, '+50 ⚡ Turbo!');
 
             powerupElements[index].remove();
             powerupElements.splice(index, 1);
