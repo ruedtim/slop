@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐕 Hunde-Fangen! 🐕</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 60%, #4CAF50 60%, #388E3C 100%);
+            overflow: hidden;
+        }
+
+        /* Wolken */
+        .cloud {
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.7;
+            animation: cloudMove linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes cloudMove {
+            from { transform: translateX(-100px); }
+            to { transform: translateX(calc(100vw + 100px)); }
+        }
+
+        /* Bäume und Deko */
+        .tree {
+            position: absolute;
+            font-size: 50px;
+            bottom: 0;
+            pointer-events: none;
+            filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.2));
+        }
+
+        /* Spieler und Hunde */
+        .dog {
+            position: absolute;
+            font-size: 40px;
+            transition: none;
+            z-index: 10;
+            filter: drop-shadow(2px 3px 2px rgba(0,0,0,0.3));
+        }
+
+        .dog.player {
+            z-index: 20;
+            font-size: 48px;
+            filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.4));
+        }
+
+        .dog.caught {
+            opacity: 0.85;
+            font-size: 36px;
+        }
+
+        /* Fang-Effekt */
+        .catch-effect {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FF6B00;
+            text-shadow: 0 0 10px #FFD700;
+            z-index: 100;
+            pointer-events: none;
+            animation: catchPop 0.8s ease-out forwards;
+        }
+
+        @keyframes catchPop {
+            0% { transform: scale(0.5) translateY(0); opacity: 1; }
+            50% { transform: scale(1.3) translateY(-30px); opacity: 1; }
+            100% { transform: scale(1) translateY(-60px); opacity: 0; }
+        }
+
+        /* Konfetti */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            z-index: 200;
+            pointer-events: none;
+            animation: confettiFall linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            z-index: 50;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #hud .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #hud .hud-item span.label {
+            color: #FFD700;
+        }
+
+        /* Startbildschirm */
+        #start-screen, #level-screen, #win-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 500;
+            color: white;
+            text-align: center;
+        }
+
+        .screen-title {
+            font-size: 64px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .screen-subtitle {
+            font-size: 24px;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+
+        .screen-info {
+            font-size: 18px;
+            color: #aaa;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .screen-info kbd {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: inherit;
+        }
+
+        .btn {
+            margin-top: 30px;
+            padding: 16px 48px;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #FF6B00, #FF9800);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 107, 0, 0.6);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .stats-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px 40px;
+            margin: 20px 0;
+        }
+
+        .stats-box .stat {
+            font-size: 22px;
+            margin: 8px 0;
+        }
+
+        .stats-box .stat .val {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        /* Pfotenabdrücke Trail */
+        .paw-print {
+            position: absolute;
+            font-size: 16px;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: pawFade 2s ease-out forwards;
+        }
+
+        @keyframes pawFade {
+            0% { opacity: 0.3; }
+            100% { opacity: 0; }
+        }
+
+        /* Wuff-Bubble */
+        .wuff-bubble {
+            position: absolute;
+            background: white;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 30;
+            pointer-events: none;
+            animation: bubbleFloat 1s ease-out forwards;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .wuff-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid white;
+        }
+
+        @keyframes bubbleFloat {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { transform: translateY(-10px) scale(1); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(-40px); opacity: 0; }
+        }
+
+        /* Mini-Map */
+        #minimap {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 150px;
+            height: 100px;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            z-index: 40;
+            overflow: hidden;
+        }
+
+        .minimap-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .minimap-dot.player-dot {
+            background: #FFD700;
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 4px #FFD700;
+        }
+
+        .minimap-dot.enemy-dot {
+            background: #FF4444;
+        }
+
+        .minimap-dot.caught-dot {
+            background: #4CAF50;
+        }
+
+        /* Geschwindigkeits-Boost Anzeige */
+        .speed-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            color: white;
+            font-size: 16px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 14px;
+            border-radius: 8px;
+            z-index: 40;
+        }
+
+        /* Lustige Hunde-Bouncing animation */
+        .dog-bounce {
+            animation: dogBounce 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes dogBounce {
+            0% { transform: translateY(0) scaleX(1); }
+            100% { transform: translateY(-5px) scaleX(-1); }
+        }
+
+        .dog-idle {
+            animation: dogIdle 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes dogIdle {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-3px); }
+        }
+
+        /* Power-Up */
+        .powerup {
+            position: absolute;
+            font-size: 32px;
+            z-index: 15;
+            animation: powerupFloat 1s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 8px gold);
+            cursor: pointer;
+        }
+
+        @keyframes powerupFloat {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-8px) scale(1.1); }
+        }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 60;
+        }
+
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-btn:active {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .mobile-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        @media (pointer: coarse) {
+            #mobile-controls {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud" style="display:none;">
+            <div class="hud-item">
+                <span class="label">🐾 Rudel:</span>
+                <span id="pack-count">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="label">⭐ Punkte:</span>
+                <span id="score">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="label">⏱️ Zeit:</span>
+                <span id="timer">0:00</span>
+            </div>
+            <div class="hud-item">
+                <span class="label">📊 Level:</span>
+                <span id="level">1</span>
+            </div>
+        </div>
+
+        <!-- Minimap -->
+        <div id="minimap" style="display:none;"></div>
+
+        <!-- Speed Indicator -->
+        <div class="speed-indicator" id="speed-indicator" style="display:none;">
+            🏃 Normal
+        </div>
+
+        <!-- Mobile Controls -->
+        <div id="mobile-controls">
+            <div class="mobile-row">
+                <div class="mobile-btn" data-dir="up">⬆️</div>
+            </div>
+            <div class="mobile-row">
+                <div class="mobile-btn" data-dir="left">⬅️</div>
+                <div class="mobile-btn" data-dir="down">⬇️</div>
+                <div class="mobile-btn" data-dir="right">➡️</div>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <div class="screen-title">🐕 Hunde-Fangen! 🐕</div>
+            <div class="screen-subtitle">Fange alle Hunde und bau dein Rudel auf!</div>
+            <div class="screen-info">🎮 Steuerung: <kbd>W A S D</kbd> oder <kbd>Pfeiltasten</kbd></div>
+            <div class="screen-info">🏃 Sprint: <kbd>Shift</kbd> gedrückt halten (begrenzte Energie!)</div>
+            <div class="screen-info">🦴 Sammle Knochen für Extra-Punkte!</div>
+            <div class="screen-info">🐶 Fange alle Hunde um das Level abzuschließen!</div>
+            <button class="btn" id="start-btn">🐾 Los geht's!</button>
+        </div>
+
+        <!-- Level Complete Screen -->
+        <div id="level-screen" style="display:none;">
+            <div class="screen-title">🎉 Level geschafft! 🎉</div>
+            <div class="stats-box">
+                <div class="stat">🐕 Hunde gefangen: <span class="val" id="ls-dogs">0</span></div>
+                <div class="stat">⭐ Punkte: <span class="val" id="ls-score">0</span></div>
+                <div class="stat">⏱️ Zeit: <span class="val" id="ls-time">0:00</span></div>
+            </div>
+            <button class="btn" id="next-btn">🐾 Nächstes Level!</button>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen" style="display:none;">
+            <div class="screen-title">🏆 Gewonnen! 🏆</div>
+            <div class="screen-subtitle">Du hast alle Level gemeistert!</div>
+            <div class="stats-box">
+                <div class="stat">⭐ Gesamtpunkte: <span class="val" id="ws-score">0</span></div>
+                <div class="stat">⏱️ Gesamtzeit: <span class="val" id="ws-time">0:00</span></div>
+                <div class="stat">🐕 Hunde gefangen: <span class="val" id="ws-dogs">0</span></div>
+            </div>
+            <button class="btn" id="restart-btn">🔄 Nochmal spielen!</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 🐕 HUNDE-FANGEN! - Das lustige Rudel-Sammel-Spiel
+        // ============================================================
+
+        const container = document.getElementById('game-container');
+        const hud = document.getElementById('hud');
+        const minimapEl = document.getElementById('minimap');
+        const speedIndicator = document.getElementById('speed-indicator');
+
+        // Dog Emojis
+        const DOG_EMOJIS = ['🐶', '🐩', '🦮', '🐕‍🦺', '🐕', '🦊'];
+        const PLAYER_EMOJI = '🐕';
+        const POWERUP_EMOJI = '🦴';
+        const BARK_SOUNDS = ['Wuff!', 'Wau!', 'Yip!', 'Bork!', 'Hechel!', 'Jaul!', 'Ruff!'];
+
+        // Level Konfiguration
+        const LEVELS = [
+            { dogs: 5, speed: 1.5, name: "Park", bgColor1: '#87CEEB', bgColor2: '#4CAF50', powerups: 2 },
+            { dogs: 7, speed: 2.0, name: "Hundewiese", bgColor1: '#FFB74D', bgColor2: '#66BB6A', powerups: 3 },
+            { dogs: 9, speed: 2.5, name: "Hundestrand", bgColor1: '#4FC3F7', bgColor2: '#FDD835', powerups: 2 },
+            { dogs: 11, speed: 3.0, name: "Hundepark Deluxe", bgColor1: '#CE93D8', bgColor2: '#81C784', powerups: 4 },
+            { dogs: 14, speed: 3.5, name: "Meister-Rudel", bgColor1: '#EF5350', bgColor2: '#26A69A', powerups: 3 },
+        ];
+
+        // Game State
+        let state = {
+            running: false,
+            level: 0,
+            score: 0,
+            totalDogsCaught: 0,
+            startTime: 0,
+            levelStartTime: 0,
+            player: { x: 0, y: 0, vx: 0, vy: 0, speed: 4, sprinting: false, stamina: 100 },
+            dogs: [],
+            caughtDogs: [], // Trail following player
+            powerups: [],
+            keys: {},
+            mobileDir: { up: false, down: false, left: false, right: false },
+            pawTimer: 0,
+            gameWidth: 0,
+            gameHeight: 0,
+        };
+
+        // DOM Elements
+        let playerEl = null;
+        let dogElements = [];
+        let caughtElements = [];
+        let powerupElements = [];
+        let treeElements = [];
+        let cloudElements = [];
+
+        // ============================================================
+        // Initialisierung
+        // ============================================================
+
+        function init() {
+            state.gameWidth = window.innerWidth;
+            state.gameHeight = window.innerHeight;
+
+            // Events
+            document.addEventListener('keydown', e => {
+                state.keys[e.key.toLowerCase()] = true;
+                if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+            });
+            document.addEventListener('keyup', e => {
+                state.keys[e.key.toLowerCase()] = false;
+            });
+
+            // Mobile Controls
+            document.querySelectorAll('.mobile-btn').forEach(btn => {
+                const dir = btn.dataset.dir;
+                btn.addEventListener('touchstart', e => { e.preventDefault(); state.mobileDir[dir] = true; });
+                btn.addEventListener('touchend', e => { e.preventDefault(); state.mobileDir[dir] = false; });
+            });
+
+            // Buttons
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('next-btn').addEventListener('click', nextLevel);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+            // Resize
+            window.addEventListener('resize', () => {
+                state.gameWidth = window.innerWidth;
+                state.gameHeight = window.innerHeight;
+            });
+
+            // Deko
+            createClouds();
+        }
+
+        function createClouds() {
+            for (let i = 0; i < 4; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
+                cloud.textContent = '☁️';
+                cloud.style.top = (5 + Math.random() * 40) + '%';
+                cloud.style.animationDuration = (15 + Math.random() * 20) + 's';
+                cloud.style.animationDelay = (-Math.random() * 20) + 's';
+                cloud.style.fontSize = (30 + Math.random() * 30) + 'px';
+                container.appendChild(cloud);
+                cloudElements.push(cloud);
+            }
+        }
+
+        function createTrees() {
+            // Clear old trees
+            treeElements.forEach(t => t.remove());
+            treeElements = [];
+
+            const trees = ['🌳', '🌲', '🌴', '🌵', '🌿', '🪴'];
+            const count = 8 + Math.floor(Math.random() * 6);
+            for (let i = 0; i < count; i++) {
+                const tree = document.createElement('div');
+                tree.className = 'tree';
+                tree.textContent = trees[Math.floor(Math.random() * trees.length)];
+                tree.style.left = (Math.random() * 90 + 5) + '%';
+                tree.style.bottom = (Math.random() * 35) + '%';
+                tree.style.fontSize = (35 + Math.random() * 30) + 'px';
+                tree.style.opacity = 0.7 + Math.random() * 0.3;
+                container.appendChild(tree);
+                treeElements.push(tree);
+            }
+        }
+
+        // ============================================================
+        // Spiel starten
+        // ============================================================
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            state.level = 0;
+            state.score = 0;
+            state.totalDogsCaught = 0;
+            state.startTime = Date.now();
+            startLevel();
+        }
+
+        function restartGame() {
+            document.getElementById('win-screen').style.display = 'none';
+            state.level = 0;
+            state.score = 0;
+            state.totalDogsCaught = 0;
+            state.startTime = Date.now();
+            startLevel();
+        }
+
+        function nextLevel() {
+            document.getElementById('level-screen').style.display = 'none';
+            state.level++;
+            if (state.level >= LEVELS.length) {
+                showWinScreen();
+                return;
+            }
+            startLevel();
+        }
+
+        function startLevel() {
+            const lvl = LEVELS[state.level];
+
+            // Update background
+            container.style.background = `linear-gradient(180deg, ${lvl.bgColor1} 0%, ${lvl.bgColor1} 55%, ${lvl.bgColor2} 55%, ${lvl.bgColor2} 100%)`;
+
+            // Clear old elements
+            clearGameElements();
+
+            // Create decorations
+            createTrees();
+
+            // Show HUD
+            hud.style.display = 'flex';
+            minimapEl.style.display = 'block';
+            speedIndicator.style.display = 'block';
+            document.getElementById('level').textContent = state.level + 1;
+
+            // Place player in center
+            state.player.x = state.gameWidth / 2;
+            state.player.y = state.gameHeight / 2;
+            state.player.vx = 0;
+            state.player.vy = 0;
+            state.player.stamina = 100;
+
+            // Create player element
+            playerEl = document.createElement('div');
+            playerEl.className = 'dog player dog-idle';
+            playerEl.textContent = PLAYER_EMOJI;
+            container.appendChild(playerEl);
+
+            // Create enemy dogs
+            state.dogs = [];
+            dogElements = [];
+            for (let i = 0; i < lvl.dogs; i++) {
+                const dog = {
+                    x: Math.random() * (state.gameWidth - 100) + 50,
+                    y: Math.random() * (state.gameHeight - 200) + 100,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    emoji: DOG_EMOJIS[Math.floor(Math.random() * DOG_EMOJIS.length)],
+                    speed: lvl.speed * (0.8 + Math.random() * 0.4),
+                    scared: false,
+                    scaredTimer: 0,
+                    wanderTimer: Math.random() * 100,
+                    barkTimer: Math.random() * 300,
+                };
+                state.dogs.push(dog);
+
+                const el = document.createElement('div');
+                el.className = 'dog dog-idle';
+                el.textContent = dog.emoji;
+                container.appendChild(el);
+                dogElements.push(el);
+            }
+
+            // Create powerups
+            state.powerups = [];
+            powerupElements = [];
+            for (let i = 0; i < lvl.powerups; i++) {
+                createPowerup();
+            }
+
+            // Configure caught dogs trail
+            state.caughtDogs = [];
+            caughtElements = [];
+
+            // Start time
+            state.levelStartTime = Date.now();
+
+            // Start game loop
+            state.running = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function createPowerup() {
+            const pu = {
+                x: Math.random() * (state.gameWidth - 100) + 50,
+                y: Math.random() * (state.gameHeight - 200) + 100,
+                type: 'bone',
+            };
+            state.powerups.push(pu);
+
+            const el = document.createElement('div');
+            el.className = 'powerup';
+            el.textContent = POWERUP_EMOJI;
+            container.appendChild(el);
+            powerupElements.push(el);
+        }
+
+        function clearGameElements() {
+            if (playerEl) playerEl.remove();
+            dogElements.forEach(el => el.remove());
+            caughtElements.forEach(el => el.remove());
+            powerupElements.forEach(el => el.remove());
+            document.querySelectorAll('.paw-print, .catch-effect, .wuff-bubble, .confetti').forEach(el => el.remove());
+            dogElements = [];
+            caughtElements = [];
+            powerupElements = [];
+            state.dogs = [];
+            state.caughtDogs = [];
+            state.powerups = [];
+        }
+
+        // ============================================================
+        // Game Loop
+        // ============================================================
+
+        let lastTime = 0;
+
+        function gameLoop(timestamp) {
+            if (!state.running) return;
+
+            const dt = Math.min((timestamp - lastTime) / 16.67, 3); // Normalize to ~60fps
+            lastTime = timestamp;
+
+            updatePlayer(dt);
+            updateDogs(dt);
+            updateCaughtDogs(dt);
+            checkCollisions();
+            updateHUD();
+            updateMinimap();
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ============================================================
+        // Spieler Update
+        // ============================================================
+
+        function updatePlayer(dt) {
+            const p = state.player;
+            let dx = 0, dy = 0;
+
+            // Input
+            if (state.keys['w'] || state.keys['arrowup'] || state.mobileDir.up) dy -= 1;
+            if (state.keys['s'] || state.keys['arrowdown'] || state.mobileDir.down) dy += 1;
+            if (state.keys['a'] || state.keys['arrowleft'] || state.mobileDir.left) dx -= 1;
+            if (state.keys['d'] || state.keys['arrowright'] || state.mobileDir.right) dx += 1;
+
+            // Normalize diagonal
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            // Sprint
+            const isSprinting = (state.keys['shift'] || state.keys['Shift']) && p.stamina > 0 && (dx !== 0 || dy !== 0);
+            p.sprinting = isSprinting;
+
+            if (isSprinting) {
+                p.stamina = Math.max(0, p.stamina - 0.8 * dt);
+            } else {
+                p.stamina = Math.min(100, p.stamina + 0.3 * dt);
+            }
+
+            const speed = isSprinting ? p.speed * 1.6 : p.speed;
+
+            // Apply velocity with smoothing
+            p.vx = dx * speed;
+            p.vy = dy * speed;
+
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+
+            // Bounds
+            p.x = Math.max(25, Math.min(state.gameWidth - 25, p.x));
+            p.y = Math.max(70, Math.min(state.gameHeight - 25, p.y));
+
+            // Paw prints
+            state.pawTimer += dt;
+            if ((Math.abs(p.vx) > 0.5 || Math.abs(p.vy) > 0.5) && state.pawTimer > 8) {
+                state.pawTimer = 0;
+                createPawPrint(p.x, p.y);
+            }
+
+            // Speed indicator
+            if (isSprinting) {
+                speedIndicator.innerHTML = `🏃💨 Sprint! (${Math.round(p.stamina)}%)`;
+                speedIndicator.style.color = p.stamina < 20 ? '#FF4444' : '#FFD700';
+            } else {
+                speedIndicator.innerHTML = `🐾 Normal (${Math.round(p.stamina)}%)`;
+                speedIndicator.style.color = 'white';
+            }
+
+            // Animation class
+            if (Math.abs(p.vx) > 0.5 || Math.abs(p.vy) > 0.5) {
+                playerEl.className = 'dog player dog-bounce';
+            } else {
+                playerEl.className = 'dog player dog-idle';
+            }
+        }
+
+        function createPawPrint(x, y) {
+            const paw = document.createElement('div');
+            paw.className = 'paw-print';
+            paw.textContent = '🐾';
+            paw.style.left = (x - 8) + 'px';
+            paw.style.top = (y + 10) + 'px';
+            container.appendChild(paw);
+            setTimeout(() => paw.remove(), 2000);
+        }
+
+        // ============================================================
+        // Hunde KI
+        // ============================================================
+
+        function updateDogs(dt) {
+            const p = state.player;
+
+            state.dogs.forEach((dog, i) => {
+                const distToPlayer = distance(dog.x, dog.y, p.x, p.y);
+                const fleeRange = 180;
+                const panicRange = 100;
+
+                dog.wanderTimer += dt;
+                dog.barkTimer += dt;
+
+                // Gelegentlich bellen
+                if (dog.barkTimer > 200 + Math.random() * 300) {
+                    dog.barkTimer = 0;
+                    if (Math.random() < 0.3) {
+                        showBark(dog.x, dog.y - 20);
+                    }
+                }
+
+                if (distToPlayer < panicRange) {
+                    // PANIK - schnell wegrennen
+                    const angle = Math.atan2(dog.y - p.y, dog.x - p.x);
+                    dog.vx = Math.cos(angle) * dog.speed * 1.8;
+                    dog.vy = Math.sin(angle) * dog.speed * 1.8;
+                    dog.scared = true;
+
+                    // Bellen wenn panisch
+                    if (Math.random() < 0.02) {
+                        showBark(dog.x, dog.y - 20);
+                    }
+                } else if (distToPlayer < fleeRange) {
+                    // Nervös - wegbewegen
+                    const angle = Math.atan2(dog.y - p.y, dog.x - p.x);
+                    dog.vx += Math.cos(angle) * dog.speed * 0.15 * dt;
+                    dog.vy += Math.sin(angle) * dog.speed * 0.15 * dt;
+                    dog.scared = true;
+                } else {
+                    dog.scared = false;
+
+                    // Frei herumlaufen
+                    if (dog.wanderTimer > 60 + Math.random() * 80) {
+                        dog.wanderTimer = 0;
+                        const angle = Math.random() * Math.PI * 2;
+                        dog.vx = Math.cos(angle) * dog.speed * 0.6;
+                        dog.vy = Math.sin(angle) * dog.speed * 0.6;
+                    }
+                }
+
+                // Geschwindigkeit begrenzen
+                const maxSpd = dog.scared ? dog.speed * 2 : dog.speed;
+                const currentSpd = Math.sqrt(dog.vx * dog.vx + dog.vy * dog.vy);
+                if (currentSpd > maxSpd) {
+                    dog.vx = (dog.vx / currentSpd) * maxSpd;
+                    dog.vy = (dog.vy / currentSpd) * maxSpd;
+                }
+
+                // Reibung
+                dog.vx *= 0.98;
+                dog.vy *= 0.98;
+
+                // Position aktualisieren
+                dog.x += dog.vx * dt;
+                dog.y += dog.vy * dt;
+
+                // Bounds - von Wänden abprallen
+                if (dog.x < 30) { dog.x = 30; dog.vx = Math.abs(dog.vx) * 0.8; }
+                if (dog.x > state.gameWidth - 30) { dog.x = state.gameWidth - 30; dog.vx = -Math.abs(dog.vx) * 0.8; }
+                if (dog.y < 70) { dog.y = 70; dog.vy = Math.abs(dog.vy) * 0.8; }
+                if (dog.y > state.gameHeight - 30) { dog.y = state.gameHeight - 30; dog.vy = -Math.abs(dog.vy) * 0.8; }
+
+                // Animation
+                if (dog.scared) {
+                    dogElements[i].className = 'dog dog-bounce';
+                } else if (Math.abs(dog.vx) > 0.3 || Math.abs(dog.vy) > 0.3) {
+                    dogElements[i].className = 'dog dog-bounce';
+                } else {
+                    dogElements[i].className = 'dog dog-idle';
+                }
+            });
+        }
+
+        // ============================================================
+        // Gefangene Hunde (Schlange)
+        // ============================================================
+
+        function updateCaughtDogs(dt) {
+            if (state.caughtDogs.length === 0) return;
+
+            // Erster gefangener Hund folgt dem Spieler
+            const leader = { x: state.player.x, y: state.player.y };
+            const followDist = 40;
+
+            state.caughtDogs.forEach((dog, i) => {
+                const target = i === 0 ? leader : state.caughtDogs[i - 1];
+                const dist = distance(dog.x, dog.y, target.x, target.y);
+
+                if (dist > followDist) {
+                    const angle = Math.atan2(target.y - dog.y, target.x - dog.x);
+                    const moveSpeed = Math.min(dist * 0.12, state.player.speed * 1.2);
+                    dog.x += Math.cos(angle) * moveSpeed * dt;
+                    dog.y += Math.sin(angle) * moveSpeed * dt;
+                }
+            });
+        }
+
+        // ============================================================
+        // Kollisionserkennung
+        // ============================================================
+
+        function checkCollisions() {
+            const p = state.player;
+
+            // Hunde fangen
+            for (let i = state.dogs.length - 1; i >= 0; i--) {
+                const dog = state.dogs[i];
+                const dist = distance(p.x, p.y, dog.x, dog.y);
+
+                if (dist < 40) {
+                    catchDog(i);
+                }
+            }
+
+            // Powerups sammeln
+            for (let i = state.powerups.length - 1; i >= 0; i--) {
+                const pu = state.powerups[i];
+                const dist = distance(p.x, p.y, pu.x, pu.y);
+
+                if (dist < 35) {
+                    collectPowerup(i);
+                }
+            }
+
+            // Check level complete
+            if (state.dogs.length === 0 && state.running) {
+                levelComplete();
+            }
+        }
+
+        function catchDog(index) {
+            const dog = state.dogs[index];
+
+            // Effekte
+            showCatchEffect(dog.x, dog.y);
+            showBark(dog.x, dog.y - 30);
+
+            // Punkte
+            const pointsBase = 100;
+            const speedBonus = Math.floor(dog.speed * 20);
+            const comboMultiplier = Math.min(state.caughtDogs.length + 1, 5);
+            const points = (pointsBase + speedBonus) * comboMultiplier;
+            state.score += points;
+            state.totalDogsCaught++;
+
+            // Show points
+            showPointsPopup(dog.x, dog.y - 10, `+${points}`);
+
+            // Zum Rudel hinzufügen
+            const lastPos = state.caughtDogs.length > 0
+                ? state.caughtDogs[state.caughtDogs.length - 1]
+                : state.player;
+
+            const caughtDog = {
+                x: lastPos.x,
+                y: lastPos.y,
+                emoji: dog.emoji,
+            };
+            state.caughtDogs.push(caughtDog);
+
+            // Element erstellen
+            const el = document.createElement('div');
+            el.className = 'dog caught dog-idle';
+            el.textContent = dog.emoji;
+            container.appendChild(el);
+            caughtElements.push(el);
+
+            // Altes Element entfernen
+            dogElements[index].remove();
+            dogElements.splice(index, 1);
+            state.dogs.splice(index, 1);
+        }
+
+        function collectPowerup(index) {
+            const pu = state.powerups[index];
+            state.score += 50;
+            state.player.stamina = Math.min(100, state.player.stamina + 40);
+
+            showCatchEffect(pu.x, pu.y);
+            showPointsPopup(pu.x, pu.y - 10, '+50 🦴');
+
+            powerupElements[index].remove();
+            powerupElements.splice(index, 1);
+            state.powerups.splice(index, 1);
+
+            // Spawn new one after a while
+            setTimeout(() => {
+                if (state.running && state.dogs.length > 0) {
+                    createPowerup();
+                }
+            }, 5000);
+        }
+
+        // ============================================================
+        // Level geschafft
+        // ============================================================
+
+        function levelComplete() {
+            state.running = false;
+
+            const levelTime = formatTime((Date.now() - state.levelStartTime) / 1000);
+            const timeBonus = Math.max(0, 500 - Math.floor((Date.now() - state.levelStartTime) / 1000) * 5);
+            state.score += timeBonus;
+
+            // Konfetti!
+            spawnConfetti();
+
+            if (state.level >= LEVELS.length - 1) {
+                // Spiel gewonnen!
+                setTimeout(() => showWinScreen(), 1500);
+            } else {
+                setTimeout(() => {
+                    const ls = document.getElementById('level-screen');
+                    document.getElementById('ls-dogs').textContent = state.caughtDogs.length;
+                    document.getElementById('ls-score').textContent = state.score;
+                    document.getElementById('ls-time').textContent = levelTime;
+                    ls.style.display = 'flex';
+                }, 1500);
+            }
+        }
+
+        function showWinScreen() {
+            const totalTime = formatTime((Date.now() - state.startTime) / 1000);
+            const ws = document.getElementById('win-screen');
+            document.getElementById('ws-score').textContent = state.score;
+            document.getElementById('ws-time').textContent = totalTime;
+            document.getElementById('ws-dogs').textContent = state.totalDogsCaught;
+            ws.style.display = 'flex';
+            spawnConfetti();
+        }
+
+        // ============================================================
+        // Visuelle Effekte
+        // ============================================================
+
+        function showCatchEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'catch-effect';
+            effect.textContent = '⭐ GEFANGEN! ⭐';
+            effect.style.left = (x - 60) + 'px';
+            effect.style.top = (y - 30) + 'px';
+            container.appendChild(effect);
+            setTimeout(() => effect.remove(), 800);
+        }
+
+        function showPointsPopup(x, y, text) {
+            const popup = document.createElement('div');
+            popup.className = 'catch-effect';
+            popup.textContent = text;
+            popup.style.left = (x - 30) + 'px';
+            popup.style.top = (y - 50) + 'px';
+            popup.style.fontSize = '18px';
+            popup.style.color = '#FFD700';
+            container.appendChild(popup);
+            setTimeout(() => popup.remove(), 800);
+        }
+
+        function showBark(x, y) {
+            const bark = document.createElement('div');
+            bark.className = 'wuff-bubble';
+            bark.textContent = BARK_SOUNDS[Math.floor(Math.random() * BARK_SOUNDS.length)];
+            bark.style.left = (x - 20) + 'px';
+            bark.style.top = (y - 25) + 'px';
+            container.appendChild(bark);
+            setTimeout(() => bark.remove(), 1000);
+        }
+
+        function spawnConfetti() {
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A855F7', '#FF6347', '#00CED1', '#FFD700', '#FF69B4'];
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const conf = document.createElement('div');
+                    conf.className = 'confetti';
+                    conf.style.left = Math.random() * 100 + '%';
+                    conf.style.top = '-10px';
+                    conf.style.width = (6 + Math.random() * 10) + 'px';
+                    conf.style.height = (6 + Math.random() * 10) + 'px';
+                    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    conf.style.animationDuration = (2 + Math.random() * 3) + 's';
+                    container.appendChild(conf);
+                    setTimeout(() => conf.remove(), 5000);
+                }, i * 30);
+            }
+        }
+
+        // ============================================================
+        // HUD & Minimap
+        // ============================================================
+
+        function updateHUD() {
+            document.getElementById('pack-count').textContent = state.caughtDogs.length;
+            document.getElementById('score').textContent = state.score;
+            document.getElementById('timer').textContent = formatTime((Date.now() - state.levelStartTime) / 1000);
+        }
+
+        function updateMinimap() {
+            minimapEl.innerHTML = '';
+            const scaleX = 150 / state.gameWidth;
+            const scaleY = 100 / state.gameHeight;
+
+            // Player
+            const pDot = document.createElement('div');
+            pDot.className = 'minimap-dot player-dot';
+            pDot.style.left = (state.player.x * scaleX - 4) + 'px';
+            pDot.style.top = (state.player.y * scaleY - 4) + 'px';
+            minimapEl.appendChild(pDot);
+
+            // Enemy dogs
+            state.dogs.forEach(dog => {
+                const dot = document.createElement('div');
+                dot.className = 'minimap-dot enemy-dot';
+                dot.style.left = (dog.x * scaleX - 3) + 'px';
+                dot.style.top = (dog.y * scaleY - 3) + 'px';
+                minimapEl.appendChild(dot);
+            });
+
+            // Caught dogs
+            state.caughtDogs.forEach(dog => {
+                const dot = document.createElement('div');
+                dot.className = 'minimap-dot caught-dot';
+                dot.style.left = (dog.x * scaleX - 3) + 'px';
+                dot.style.top = (dog.y * scaleY - 3) + 'px';
+                minimapEl.appendChild(dot);
+            });
+        }
+
+        // ============================================================
+        // Rendering
+        // ============================================================
+
+        function render() {
+            // Player
+            playerEl.style.left = (state.player.x - 24) + 'px';
+            playerEl.style.top = (state.player.y - 24) + 'px';
+
+            // Flip based on direction
+            if (state.player.vx < -0.5) {
+                playerEl.style.transform = 'scaleX(-1)';
+            } else if (state.player.vx > 0.5) {
+                playerEl.style.transform = 'scaleX(1)';
+            }
+
+            // Enemy dogs
+            state.dogs.forEach((dog, i) => {
+                if (dogElements[i]) {
+                    dogElements[i].style.left = (dog.x - 20) + 'px';
+                    dogElements[i].style.top = (dog.y - 20) + 'px';
+
+                    if (dog.vx < -0.3) {
+                        dogElements[i].style.transform = 'scaleX(-1)';
+                    } else if (dog.vx > 0.3) {
+                        dogElements[i].style.transform = 'scaleX(1)';
+                    }
+                }
+            });
+
+            // Caught dogs
+            state.caughtDogs.forEach((dog, i) => {
+                if (caughtElements[i]) {
+                    caughtElements[i].style.left = (dog.x - 18) + 'px';
+                    caughtElements[i].style.top = (dog.y - 18) + 'px';
+                }
+            });
+
+            // Powerups
+            state.powerups.forEach((pu, i) => {
+                if (powerupElements[i]) {
+                    powerupElements[i].style.left = (pu.x - 16) + 'px';
+                    powerupElements[i].style.top = (pu.y - 16) + 'px';
+                }
+            });
+        }
+
+        // ============================================================
+        // Hilfsfunktionen
+        // ============================================================
+
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // ============================================================
+        // START!
+        // ============================================================
+        init();
+    </script>
+</body>
+</html>
