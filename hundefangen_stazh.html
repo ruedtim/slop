@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staatsarchiv Zürich: Fensterblick Irchelpark</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #87CEEB 0%, #B0D9F0 40%, #6BAF5B 55%, #4A8A3C 70%, #3D7A32 100%);
+            overflow: hidden;
+        }
+
+        /* === STAATSARCHIV GEBÄUDE (CSS-Architektur) === */
+        #staatsarchiv-building {
+            position: absolute;
+            bottom: 28%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(92vw, 1100px);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .building-main {
+            position: relative;
+            height: 180px;
+            display: flex;
+            background: linear-gradient(180deg, #b8bcc2 0%, #a8acb2 50%, #989ca2 100%);
+            border-top: 4px solid #7a7e84;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        /* Vertikale Beton-Lamellen */
+        .concrete-fin {
+            flex: 0 0 auto;
+            width: 18px;
+            height: 100%;
+            background: linear-gradient(90deg, #c5c9cf 0%, #d5d9df 40%, #b0b4ba 100%);
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.15), -1px 0 2px rgba(0, 0, 0, 0.08);
+            position: relative;
+            z-index: 2;
+        }
+
+        .concrete-fin::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 30%, transparent 70%, rgba(0, 0, 0, 0.08) 100%);
+        }
+
+        /* Glas-Panels zwischen den Lamellen */
+        .glass-panel {
+            flex: 1;
+            height: 100%;
+            background: linear-gradient(180deg,
+                    rgba(120, 160, 190, 0.7) 0%,
+                    rgba(100, 145, 175, 0.6) 20%,
+                    rgba(85, 135, 165, 0.5) 50%,
+                    rgba(70, 120, 150, 0.55) 80%,
+                    rgba(60, 100, 130, 0.6) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(180, 210, 235, 0.4) 0%, transparent 100%);
+        }
+
+        .glass-panel::after {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 20%;
+            width: 3px;
+            height: 75%;
+            background: rgba(255, 255, 255, 0.08);
+            transform: skewX(-2deg);
+        }
+
+        /* Gebäude-Dach / oberer Abschluss */
+        .building-roof {
+            height: 12px;
+            background: linear-gradient(180deg, #888c92, #a0a4aa);
+            border-top: 2px solid #6a6e74;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Gebäude-Sockel */
+        .building-base {
+            height: 20px;
+            background: linear-gradient(180deg, #7a7e84 0%, #686c72 100%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Rechter Anbau (weisser Trakt) */
+        .building-annex {
+            position: absolute;
+            right: -5%;
+            bottom: 0;
+            width: 22%;
+            height: 140px;
+            background: linear-gradient(180deg, #e8eaec 0%, #d8dadc 100%);
+            border: 1px solid #b0b4ba;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+            z-index: 1;
+        }
+
+        .annex-windows {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 8px;
+            padding: 20px 12px;
+            height: 100%;
+        }
+
+        .annex-window {
+            background: linear-gradient(180deg, rgba(130, 170, 190, 0.5) 0%, rgba(100, 140, 160, 0.4) 100%);
+            border: 1px solid #a0a4aa;
+            border-radius: 1px;
+        }
+
+        /* Spiegelung im Glas */
+        .glass-reflection {
+            position: absolute;
+            top: 0;
+            left: 8%;
+            width: 35%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Weg zum Gebäude */
+        .building-path {
+            position: absolute;
+            bottom: 24%;
+            left: 50%;
+            transform: translateX(-50%) perspective(200px) rotateX(25deg);
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(180deg, #d4c9a8 0%, #c4b998 100%);
+            border-radius: 2px;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Gras-Hügel vor dem Gebäude */
+        .grass-mound {
+            position: absolute;
+            bottom: 26%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(96vw, 1200px);
+            height: 40px;
+            background: linear-gradient(180deg, #6BAF5B 0%, #5A9E4A 100%);
+            border-radius: 50% 50% 0 0;
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        /* === Wolken === */
+        .cloud {
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.6;
+            animation: cloudMove linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes cloudMove {
+            from {
+                transform: translateX(-100px);
+            }
+
+            to {
+                transform: translateX(calc(100vw + 100px));
+            }
+        }
+
+        /* === Bäume / Parkdeko === */
+        .tree {
+            position: absolute;
+            font-size: 50px;
+            bottom: 0;
+            pointer-events: none;
+            filter: drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.2));
+        }
+
+        /* === Rabenkrähen === */
+        .crow {
+            position: absolute;
+            font-size: 28px;
+            z-index: 8;
+            pointer-events: none;
+            filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.2));
+            transition: transform 0.3s ease;
+        }
+
+        .crow-caw {
+            position: absolute;
+            background: rgba(30, 34, 40, 0.85);
+            color: #d0d4da;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            font-style: italic;
+            z-index: 9;
+            pointer-events: none;
+            animation: cawFloat 1.2s ease-out forwards;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes cawFloat {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0;
+            }
+
+            15% {
+                transform: translateY(-8px) scale(1);
+                opacity: 1;
+            }
+
+            75% {
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+        }
+
+        /* === Spieler und Hunde === */
+        .dog {
+            position: absolute;
+            font-size: 40px;
+            transition: none;
+            z-index: 10;
+            filter: drop-shadow(2px 3px 2px rgba(0, 0, 0, 0.3));
+        }
+
+        .dog.player {
+            z-index: 20;
+            font-size: 48px;
+            filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.4));
+        }
+
+        .dog.caught {
+            opacity: 0.85;
+            font-size: 36px;
+        }
+
+        /* Fang-Effekt */
+        .catch-effect {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FF6B00;
+            text-shadow: 0 0 10px #FFD700;
+            z-index: 100;
+            pointer-events: none;
+            animation: catchPop 0.8s ease-out forwards;
+        }
+
+        @keyframes catchPop {
+            0% {
+                transform: scale(0.5) translateY(0);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.3) translateY(-30px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) translateY(-60px);
+                opacity: 0;
+            }
+        }
+
+        /* Konfetti */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            z-index: 200;
+            pointer-events: none;
+            animation: confettiFall linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* === HUD === */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 24px;
+            background: linear-gradient(180deg, rgba(60, 64, 70, 0.92) 0%, rgba(50, 54, 60, 0.88) 100%);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+            color: #e0e4ea;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        #hud .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #hud .hud-item span.label {
+            color: #c0c8d0;
+            font-weight: 400;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* === Screens === */
+        #start-screen,
+        #level-screen,
+        #win-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(40, 44, 50, 0.92) 0%, rgba(30, 34, 40, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            z-index: 500;
+            color: white;
+            text-align: center;
+        }
+
+        .screen-title {
+            font-size: clamp(30px, 7vw, 56px);
+            margin-bottom: 6px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #e0e4ea 0%, #a0b0c0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .screen-subtitle {
+            font-size: clamp(16px, 3.5vw, 22px);
+            color: #8090a0;
+            margin-bottom: 28px;
+            font-weight: 300;
+        }
+
+        .screen-info {
+            font-size: 16px;
+            color: #708090;
+            margin-bottom: 6px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .screen-info kbd {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: 'Inter', monospace;
+            font-size: 14px;
+        }
+
+        /* Archiv-Signet auf Startscreen */
+        .screen-signet {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.9;
+        }
+
+        .screen-building-silhouette {
+            width: min(70vw, 500px);
+            height: 60px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 3px;
+            opacity: 0.25;
+        }
+
+        .silhouette-fin {
+            width: 8px;
+            background: #e0e4ea;
+            border-radius: 1px 1px 0 0;
+        }
+
+        .btn {
+            margin-top: 24px;
+            padding: 14px 44px;
+            font-size: 20px;
+            font-weight: 700;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #5a6a7a 0%, #6a7a8a 100%);
+            color: #e0e8f0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #6a7a8a 0%, #7a8a9a 100%);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .stats-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 18px 36px;
+            margin: 16px 0;
+        }
+
+        .stats-box .stat {
+            font-size: 20px;
+            margin: 6px 0;
+            font-weight: 300;
+        }
+
+        .stats-box .stat .val {
+            color: #a0c0e0;
+            font-weight: 700;
+        }
+
+        /* === Pfotenabdrücke === */
+        .paw-print {
+            position: absolute;
+            font-size: 16px;
+            opacity: 0.3;
+            pointer-events: none;
+            animation: pawFade 2s ease-out forwards;
+        }
+
+        @keyframes pawFade {
+            0% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* === Wuff-Bubble === */
+        .wuff-bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            color: #3a4450;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 30;
+            pointer-events: none;
+            animation: bubbleFloat 1s ease-out forwards;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .wuff-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid rgba(255, 255, 255, 0.95);
+        }
+
+        @keyframes bubbleFloat {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0;
+            }
+
+            20% {
+                transform: translateY(-10px) scale(1);
+                opacity: 1;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-40px);
+                opacity: 0;
+            }
+        }
+
+        /* === Mini-Map === */
+        #minimap {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 150px;
+            height: 100px;
+            background: rgba(40, 44, 50, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            z-index: 40;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+        }
+
+        .minimap-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .minimap-dot.player-dot {
+            background: #a0c0e0;
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 4px #a0c0e0;
+        }
+
+        .minimap-dot.enemy-dot {
+            background: #e07060;
+        }
+
+        .minimap-dot.caught-dot {
+            background: #70b070;
+        }
+
+        /* === Speed Indicator === */
+        .speed-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            color: #d0d8e0;
+            font-size: 14px;
+            background: rgba(40, 44, 50, 0.7);
+            padding: 8px 14px;
+            border-radius: 4px;
+            z-index: 40;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(4px);
+            font-weight: 400;
+        }
+
+        /* === Dog Animations === */
+        .dog-bounce {
+            animation: dogBounce 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes dogBounce {
+            0% {
+                transform: translateY(0) scaleX(1);
+            }
+
+            100% {
+                transform: translateY(-5px) scaleX(-1);
+            }
+        }
+
+        .dog-idle {
+            animation: dogIdle 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes dogIdle {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-3px);
+            }
+        }
+
+        /* === Power-Up === */
+        .powerup {
+            position: absolute;
+            font-size: 32px;
+            z-index: 15;
+            animation: powerupFloat 1s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 6px rgba(180, 200, 220, 0.6));
+            cursor: pointer;
+        }
+
+        @keyframes powerupFloat {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                transform: translateY(-8px) scale(1.1);
+            }
+        }
+
+        /* === Wegmarkierungen / Pollards === */
+        .path-bollard {
+            position: absolute;
+            width: 6px;
+            height: 16px;
+            background: linear-gradient(180deg, #3a3e44 0%, #2a2e34 100%);
+            border-radius: 3px 3px 0 0;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* === Mobile Controls === */
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 60;
+        }
+
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(60, 64, 70, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            backdrop-filter: blur(4px);
+        }
+
+        .mobile-btn:active {
+            background: rgba(80, 84, 90, 0.6);
+        }
+
+        .mobile-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        @media (pointer: coarse) {
+            #mobile-controls {
+                display: block;
+            }
+
+
+
+            .building-main {
+                height: 120px;
+            }
+
+            .concrete-fin {
+                width: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud" style="display:none;">
+            <div class="hud-item">
+                <span class="label">🗂️ Sichtungen:</span>
+                <span id="pack-count">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="label">⭐ Punkte:</span>
+                <span id="score">0</span>
+            </div>
+            <div class="hud-item">
+                <span class="label">⏱️ Zeit:</span>
+                <span id="timer">0:00</span>
+            </div>
+            <div class="hud-item">
+                <span class="label">📊 Fenster:</span>
+                <span id="level">1</span>
+            </div>
+        </div>
+
+
+
+        <!-- Staatsarchiv Gebäude (Architektur) -->
+        <div id="staatsarchiv-building">
+            <div class="building-roof"></div>
+            <div class="building-main" id="building-fins-container">
+                <div class="glass-reflection"></div>
+                <!-- Fins + Glass panels generated by JS -->
+            </div>
+            <div class="building-base"></div>
+            <div class="building-annex">
+                <div class="annex-windows">
+                    <div class="annex-window"></div>
+                    <div class="annex-window"></div>
+                    <div class="annex-window"></div>
+                    <div class="annex-window"></div>
+                    <div class="annex-window"></div>
+                    <div class="annex-window"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gras-Hügel -->
+        <div class="grass-mound"></div>
+
+        <!-- Weg -->
+        <div class="building-path"></div>
+
+        <!-- Minimap -->
+        <div id="minimap" style="display:none;"></div>
+
+        <!-- Speed Indicator -->
+        <div class="speed-indicator" id="speed-indicator" style="display:none;">
+            👀 Fensterblick
+        </div>
+
+        <!-- Mobile Controls -->
+        <div id="mobile-controls">
+            <div class="mobile-row">
+                <div class="mobile-btn" data-dir="up">⬆️</div>
+            </div>
+            <div class="mobile-row">
+                <div class="mobile-btn" data-dir="left">⬅️</div>
+                <div class="mobile-btn" data-dir="down">⬇️</div>
+                <div class="mobile-btn" data-dir="right">➡️</div>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <div class="screen-signet">🏛️</div>
+            <div class="screen-building-silhouette" id="start-silhouette"></div>
+            <div class="screen-title">Staatsarchiv Zürich</div>
+            <div class="screen-subtitle">Hundesichtung im Irchelpark — Dokumentiere jede Begegnung</div>
+            <div class="screen-info">🎮 Steuerung: <kbd>W A S D</kbd> oder <kbd>Pfeiltasten</kbd></div>
+            <div class="screen-info">🏃 Sprint: <kbd>Shift</kbd> gedrückt halten</div>
+            <div class="screen-info">🗂️ Aktenmappen sammeln für Energie & Bonuspunkte</div>
+            <div class="screen-info">� Hunde im Park einfangen und dokumentieren</div>
+            <button class="btn" id="start-btn">Sichtungsrunde starten</button>
+        </div>
+
+        <!-- Level Complete Screen -->
+        <div id="level-screen" style="display:none;">
+            <div class="screen-title">Sichtungsrunde abgeschlossen</div>
+            <div class="stats-box">
+                <div class="stat">🐕 Hunde dokumentiert: <span class="val" id="ls-dogs">0</span></div>
+                <div class="stat">⭐ Punkte: <span class="val" id="ls-score">0</span></div>
+                <div class="stat">⏱️ Zeit: <span class="val" id="ls-time">0:00</span></div>
+            </div>
+            <button class="btn" id="next-btn">Nächstes Fenster öffnen</button>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen" style="display:none;">
+            <div class="screen-title">Archivbericht komplett</div>
+            <div class="screen-subtitle">Alle Fenster am Staatsarchiv wurden ausgewertet.</div>
+            <div class="stats-box">
+                <div class="stat">⭐ Gesamtpunkte: <span class="val" id="ws-score">0</span></div>
+                <div class="stat">⏱️ Gesamtzeit: <span class="val" id="ws-time">0:00</span></div>
+                <div class="stat">🐕 Hunde dokumentiert: <span class="val" id="ws-dogs">0</span></div>
+            </div>
+            <button class="btn" id="restart-btn">Neue Tagesrunde</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // STAATSARCHIV ZUERICH: FENSTERBLICK IRCHELPARK
+        // ============================================================
+
+        const container = document.getElementById('game-container');
+        const hud = document.getElementById('hud');
+        const minimapEl = document.getElementById('minimap');
+        const speedIndicator = document.getElementById('speed-indicator');
+
+        // Dog Emojis
+        const DOG_EMOJIS = ['🐶', '🐩', '🦮', '🐕‍🦺', '🐕', '🦊'];
+        const PLAYER_EMOJI = '🐕';
+        const POWERUP_EMOJI = '🗂️';
+        const BARK_SOUNDS = ['Wuff!', 'Wau wau!', 'Hechel...', 'Ruff!', 'Japs!', 'Wuff wuff!', 'Schnüffel...', 'Gassi!', '*schwanzwedel*', 'Kläff!', 'Wau!', '*hechel hechel*', 'Grrrr...', '*bell*', 'Yip!'];
+        const CROW_CAWS = ['Kräh!', 'Kraa!', 'Krah krah!', 'Krrää!', 'Caw!', 'Krächz!'];
+        const CROW_EMOJIS = ['🐦‍⬛'];
+
+        // Level Konfiguration
+        const LEVELS = [
+            { dogs: 5, speed: 1.4, name: "Nordfenster", spot: "Irchelpark Wiesenrand", bgColor1: '#9ED3EC', bgColor2: '#4E9362', powerups: 2, sightingRate: 260 },
+            { dogs: 7, speed: 1.95, name: "Lesesaalfenster", spot: "Beliebte Gassi-Route", bgColor1: '#E9CFA5', bgColor2: '#5A9F69', powerups: 3, sightingRate: 230 },
+            { dogs: 9, speed: 2.35, name: "Westfenster", spot: "Bachweg im Irchelpark", bgColor1: '#9AC6E3', bgColor2: '#74B84A', powerups: 2, sightingRate: 205 },
+            { dogs: 11, speed: 2.85, name: "Magazinfenster", spot: "Hundegruppe am Hang", bgColor1: '#D5B9D8', bgColor2: '#6AAE6A', powerups: 4, sightingRate: 180 },
+            { dogs: 14, speed: 3.3, name: "Panoramafenster", spot: "Hauptweg Irchelpark", bgColor1: '#F2AE8B', bgColor2: '#53A065', powerups: 3, sightingRate: 155 },
+        ];
+
+        // Game State
+        let state = {
+            running: false,
+            level: 0,
+            score: 0,
+            totalDogsCaught: 0,
+            startTime: 0,
+            levelStartTime: 0,
+            player: { x: 0, y: 0, vx: 0, vy: 0, speed: 4, sprinting: false, stamina: 100 },
+            dogs: [],
+            caughtDogs: [], // Trail following player
+            powerups: [],
+            keys: {},
+            mobileDir: { up: false, down: false, left: false, right: false },
+            pawTimer: 0,
+            archiveSightingTimer: 0,
+            activeWindowIndex: -1,
+            gameWidth: 0,
+            gameHeight: 0,
+        };
+
+        // DOM Elements
+        let playerEl = null;
+        let dogElements = [];
+        let caughtElements = [];
+        let powerupElements = [];
+        let treeElements = [];
+        let cloudElements = [];
+        let crowState = []; // { x, y, vx, vy, cawTimer, el }
+
+        // ============================================================
+        // Initialisierung
+        // ============================================================
+
+        function init() {
+            state.gameWidth = window.innerWidth;
+            state.gameHeight = window.innerHeight;
+
+            // Events
+            document.addEventListener('keydown', e => {
+                state.keys[e.key.toLowerCase()] = true;
+                if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+            });
+            document.addEventListener('keyup', e => {
+                state.keys[e.key.toLowerCase()] = false;
+            });
+
+            // Mobile Controls
+            document.querySelectorAll('.mobile-btn').forEach(btn => {
+                const dir = btn.dataset.dir;
+                btn.addEventListener('touchstart', e => { e.preventDefault(); state.mobileDir[dir] = true; });
+                btn.addEventListener('touchend', e => { e.preventDefault(); state.mobileDir[dir] = false; });
+            });
+
+            // Buttons
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('next-btn').addEventListener('click', nextLevel);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+            // Resize
+            window.addEventListener('resize', () => {
+                state.gameWidth = window.innerWidth;
+                state.gameHeight = window.innerHeight;
+            });
+
+            // Deko
+            createClouds();
+            createBuildingFins();
+            createStartSilhouette();
+        }
+
+        function createClouds() {
+            for (let i = 0; i < 4; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
+                cloud.textContent = '☁️';
+                cloud.style.top = (5 + Math.random() * 40) + '%';
+                cloud.style.animationDuration = (15 + Math.random() * 20) + 's';
+                cloud.style.animationDelay = (-Math.random() * 20) + 's';
+                cloud.style.fontSize = (30 + Math.random() * 30) + 'px';
+                container.appendChild(cloud);
+                cloudElements.push(cloud);
+            }
+        }
+
+        function createBuildingFins() {
+            const container = document.getElementById('building-fins-container');
+            const finCount = window.matchMedia('(pointer: coarse)').matches ? 16 : 24;
+            // Clear existing fins (keep the glass-reflection)
+            const reflection = container.querySelector('.glass-reflection');
+            container.innerHTML = '';
+            if (reflection) container.appendChild(reflection);
+
+            for (let i = 0; i < finCount; i++) {
+                const fin = document.createElement('div');
+                fin.className = 'concrete-fin';
+                container.appendChild(fin);
+
+                if (i < finCount - 1) {
+                    const glass = document.createElement('div');
+                    glass.className = 'glass-panel';
+                    container.appendChild(glass);
+                }
+            }
+        }
+
+        function createStartSilhouette() {
+            const sil = document.getElementById('start-silhouette');
+            if (!sil) return;
+            sil.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                const fin = document.createElement('div');
+                fin.className = 'silhouette-fin';
+                const h = 30 + Math.random() * 30;
+                fin.style.height = h + 'px';
+                sil.appendChild(fin);
+            }
+        }
+
+        function createCrows() {
+            // Remove old crows
+            crowState.forEach(c => c.el.remove());
+            crowState = [];
+
+            const count = 3 + Math.floor(Math.random() * 3); // 3-5 crows
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = 'crow';
+                el.textContent = CROW_EMOJIS[0];
+                container.appendChild(el);
+
+                const crow = {
+                    x: Math.random() * state.gameWidth,
+                    y: 30 + Math.random() * (state.gameHeight * 0.3),
+                    vx: (0.5 + Math.random() * 1.2) * (Math.random() < 0.5 ? 1 : -1),
+                    vy: (Math.random() - 0.5) * 0.3,
+                    cawTimer: Math.random() * 400,
+                    glideTimer: Math.random() * 200,
+                    el: el,
+                };
+                crowState.push(crow);
+            }
+        }
+
+        function updateCrows(dt) {
+            crowState.forEach(crow => {
+                crow.cawTimer += dt;
+                crow.glideTimer += dt;
+
+                // Occasional direction shifts (gliding)
+                if (crow.glideTimer > 120 + Math.random() * 200) {
+                    crow.glideTimer = 0;
+                    crow.vy = (Math.random() - 0.5) * 0.4;
+                    crow.vx += (Math.random() - 0.5) * 0.3;
+                    // Keep horizontal speed reasonable
+                    const absVx = Math.abs(crow.vx);
+                    if (absVx < 0.3) crow.vx = 0.5 * Math.sign(crow.vx);
+                    if (absVx > 2) crow.vx = 2 * Math.sign(crow.vx);
+                }
+
+                crow.x += crow.vx * dt;
+                crow.y += crow.vy * dt;
+
+                // Wrap horizontally
+                if (crow.x < -40) crow.x = state.gameWidth + 30;
+                if (crow.x > state.gameWidth + 40) crow.x = -30;
+
+                // Keep in upper part of screen
+                crow.y = Math.max(20, Math.min(state.gameHeight * 0.4, crow.y));
+
+                // Render
+                crow.el.style.left = crow.x + 'px';
+                crow.el.style.top = crow.y + 'px';
+                crow.el.style.transform = crow.vx < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+
+                // Occasional cawing
+                if (crow.cawTimer > 300 + Math.random() * 500) {
+                    crow.cawTimer = 0;
+                    if (Math.random() < 0.4) {
+                        showCrowCaw(crow.x, crow.y - 15);
+                    }
+                }
+            });
+        }
+
+        function showCrowCaw(x, y) {
+            const caw = document.createElement('div');
+            caw.className = 'crow-caw';
+            caw.textContent = CROW_CAWS[Math.floor(Math.random() * CROW_CAWS.length)];
+            caw.style.left = (x - 10) + 'px';
+            caw.style.top = (y - 15) + 'px';
+            container.appendChild(caw);
+            setTimeout(() => caw.remove(), 1200);
+        }
+
+        function createTrees() {
+            // Clear old trees
+            treeElements.forEach(t => t.remove());
+            treeElements = [];
+
+            const trees = ['🌳', '🌲', '🌿', '🌱', '🪑', '🚶', '🚴', '🦆'];
+            const count = 8 + Math.floor(Math.random() * 6);
+            for (let i = 0; i < count; i++) {
+                const tree = document.createElement('div');
+                tree.className = 'tree';
+                tree.textContent = trees[Math.floor(Math.random() * trees.length)];
+                tree.style.left = (Math.random() * 90 + 5) + '%';
+                tree.style.bottom = (Math.random() * 35) + '%';
+                tree.style.fontSize = (35 + Math.random() * 30) + 'px';
+                tree.style.opacity = 0.7 + Math.random() * 0.3;
+                container.appendChild(tree);
+                treeElements.push(tree);
+            }
+        }
+
+        // ============================================================
+        // Spiel starten
+        // ============================================================
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            state.level = 0;
+            state.score = 0;
+            state.totalDogsCaught = 0;
+            state.startTime = Date.now();
+            startLevel();
+        }
+
+        function restartGame() {
+            document.getElementById('win-screen').style.display = 'none';
+            state.level = 0;
+            state.score = 0;
+            state.totalDogsCaught = 0;
+            state.startTime = Date.now();
+            startLevel();
+        }
+
+        function nextLevel() {
+            document.getElementById('level-screen').style.display = 'none';
+            state.level++;
+            if (state.level >= LEVELS.length) {
+                showWinScreen();
+                return;
+            }
+            startLevel();
+        }
+
+        function startLevel() {
+            const lvl = LEVELS[state.level];
+
+            // Update background - smooth gradient with Irchelpark feel
+            container.style.background = `linear-gradient(180deg, ${lvl.bgColor1} 0%, ${lvl.bgColor1} 40%, ${lvl.bgColor2} 55%, ${lvl.bgColor2} 100%)`;
+
+
+            // Clear old elements
+            clearGameElements();
+
+            // Create decorations
+            createTrees();
+
+            // Show HUD
+            hud.style.display = 'flex';
+            minimapEl.style.display = 'block';
+            speedIndicator.style.display = 'block';
+            document.getElementById('level').textContent = state.level + 1;
+
+            // Place player in center
+            state.player.x = state.gameWidth / 2;
+            state.player.y = state.gameHeight / 2;
+            state.player.vx = 0;
+            state.player.vy = 0;
+            state.player.stamina = 100;
+
+            // Create player element
+            playerEl = document.createElement('div');
+            playerEl.className = 'dog player dog-idle';
+            playerEl.textContent = PLAYER_EMOJI;
+            container.appendChild(playerEl);
+
+            // Create enemy dogs
+            state.dogs = [];
+            dogElements = [];
+            for (let i = 0; i < lvl.dogs; i++) {
+                const dog = {
+                    x: Math.random() * (state.gameWidth - 100) + 50,
+                    y: Math.random() * (state.gameHeight - 200) + 100,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    emoji: DOG_EMOJIS[Math.floor(Math.random() * DOG_EMOJIS.length)],
+                    speed: lvl.speed * (0.8 + Math.random() * 0.4),
+                    scared: false,
+                    scaredTimer: 0,
+                    wanderTimer: Math.random() * 100,
+                    barkTimer: Math.random() * 300,
+                };
+                state.dogs.push(dog);
+
+                const el = document.createElement('div');
+                el.className = 'dog dog-idle';
+                el.textContent = dog.emoji;
+                container.appendChild(el);
+                dogElements.push(el);
+            }
+
+            // Create powerups
+            state.powerups = [];
+            powerupElements = [];
+            for (let i = 0; i < lvl.powerups; i++) {
+                createPowerup();
+            }
+
+            // Configure caught dogs trail
+            state.caughtDogs = [];
+            caughtElements = [];
+
+            // Create crows for this level
+            createCrows();
+
+            // Start time
+            state.levelStartTime = Date.now();
+
+            // Start game loop
+            state.running = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function createPowerup() {
+            const pu = {
+                x: Math.random() * (state.gameWidth - 100) + 50,
+                y: Math.random() * (state.gameHeight - 200) + 100,
+                type: 'archive-doc',
+            };
+            state.powerups.push(pu);
+
+            const el = document.createElement('div');
+            el.className = 'powerup';
+            el.textContent = POWERUP_EMOJI;
+            container.appendChild(el);
+            powerupElements.push(el);
+        }
+
+        function clearGameElements() {
+            if (playerEl) playerEl.remove();
+            dogElements.forEach(el => el.remove());
+            caughtElements.forEach(el => el.remove());
+            powerupElements.forEach(el => el.remove());
+            document.querySelectorAll('.paw-print, .catch-effect, .wuff-bubble, .confetti').forEach(el => el.remove());
+            dogElements = [];
+            caughtElements = [];
+            powerupElements = [];
+            state.dogs = [];
+            state.caughtDogs = [];
+            state.powerups = [];
+        }
+
+        // ============================================================
+        // Game Loop
+        // ============================================================
+
+        let lastTime = 0;
+
+        function gameLoop(timestamp) {
+            if (!state.running) return;
+
+            const dt = Math.min((timestamp - lastTime) / 16.67, 3); // Normalize to ~60fps
+            lastTime = timestamp;
+
+            updatePlayer(dt);
+            updateDogs(dt);
+            updateCaughtDogs(dt);
+            updateCrows(dt);
+            checkCollisions();
+            updateHUD();
+            updateMinimap();
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ============================================================
+        // Spieler Update
+        // ============================================================
+
+        function updatePlayer(dt) {
+            const p = state.player;
+            let dx = 0, dy = 0;
+
+            // Input
+            if (state.keys['w'] || state.keys['arrowup'] || state.mobileDir.up) dy -= 1;
+            if (state.keys['s'] || state.keys['arrowdown'] || state.mobileDir.down) dy += 1;
+            if (state.keys['a'] || state.keys['arrowleft'] || state.mobileDir.left) dx -= 1;
+            if (state.keys['d'] || state.keys['arrowright'] || state.mobileDir.right) dx += 1;
+
+            // Normalize diagonal
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            // Sprint
+            const isSprinting = (state.keys['shift'] || state.keys['Shift']) && p.stamina > 0 && (dx !== 0 || dy !== 0);
+            p.sprinting = isSprinting;
+
+            if (isSprinting) {
+                p.stamina = Math.max(0, p.stamina - 0.8 * dt);
+            } else {
+                p.stamina = Math.min(100, p.stamina + 0.3 * dt);
+            }
+
+            const speed = isSprinting ? p.speed * 1.6 : p.speed;
+
+            // Apply velocity with smoothing
+            p.vx = dx * speed;
+            p.vy = dy * speed;
+
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+
+            // Bounds
+            p.x = Math.max(25, Math.min(state.gameWidth - 25, p.x));
+            p.y = Math.max(70, Math.min(state.gameHeight - 25, p.y));
+
+            // Paw prints
+            state.pawTimer += dt;
+            if ((Math.abs(p.vx) > 0.5 || Math.abs(p.vy) > 0.5) && state.pawTimer > 8) {
+                state.pawTimer = 0;
+                createPawPrint(p.x, p.y);
+            }
+
+            // Speed indicator
+            if (isSprinting) {
+                speedIndicator.innerHTML = `🏃 Aktenlauf (${Math.round(p.stamina)}%)`;
+                speedIndicator.style.color = p.stamina < 20 ? '#FF4444' : '#FFD700';
+            } else {
+                speedIndicator.innerHTML = `👀 Fensterblick (${Math.round(p.stamina)}%)`;
+                speedIndicator.style.color = 'white';
+            }
+
+            // Animation class
+            if (Math.abs(p.vx) > 0.5 || Math.abs(p.vy) > 0.5) {
+                playerEl.className = 'dog player dog-bounce';
+            } else {
+                playerEl.className = 'dog player dog-idle';
+            }
+        }
+
+        function createPawPrint(x, y) {
+            const paw = document.createElement('div');
+            paw.className = 'paw-print';
+            paw.textContent = '🐾';
+            paw.style.left = (x - 8) + 'px';
+            paw.style.top = (y + 10) + 'px';
+            container.appendChild(paw);
+            setTimeout(() => paw.remove(), 2000);
+        }
+
+        // ============================================================
+        // Hunde KI
+        // ============================================================
+
+        function updateDogs(dt) {
+            const p = state.player;
+
+            state.dogs.forEach((dog, i) => {
+                const distToPlayer = distance(dog.x, dog.y, p.x, p.y);
+                const fleeRange = 180;
+                const panicRange = 100;
+
+                dog.wanderTimer += dt;
+                dog.barkTimer += dt;
+
+                // Gelegentlich bellen
+                if (dog.barkTimer > 200 + Math.random() * 300) {
+                    dog.barkTimer = 0;
+                    if (Math.random() < 0.3) {
+                        showBark(dog.x, dog.y - 20);
+                    }
+                }
+
+                if (distToPlayer < panicRange) {
+                    // PANIK - schnell wegrennen
+                    const angle = Math.atan2(dog.y - p.y, dog.x - p.x);
+                    dog.vx = Math.cos(angle) * dog.speed * 1.8;
+                    dog.vy = Math.sin(angle) * dog.speed * 1.8;
+                    dog.scared = true;
+
+                    // Bellen wenn panisch
+                    if (Math.random() < 0.02) {
+                        showBark(dog.x, dog.y - 20);
+                    }
+                } else if (distToPlayer < fleeRange) {
+                    // Nervös - wegbewegen
+                    const angle = Math.atan2(dog.y - p.y, dog.x - p.x);
+                    dog.vx += Math.cos(angle) * dog.speed * 0.15 * dt;
+                    dog.vy += Math.sin(angle) * dog.speed * 0.15 * dt;
+                    dog.scared = true;
+                } else {
+                    dog.scared = false;
+
+                    // Frei herumlaufen
+                    if (dog.wanderTimer > 60 + Math.random() * 80) {
+                        dog.wanderTimer = 0;
+                        const angle = Math.random() * Math.PI * 2;
+                        dog.vx = Math.cos(angle) * dog.speed * 0.6;
+                        dog.vy = Math.sin(angle) * dog.speed * 0.6;
+                    }
+                }
+
+                // Geschwindigkeit begrenzen
+                const maxSpd = dog.scared ? dog.speed * 2 : dog.speed;
+                const currentSpd = Math.sqrt(dog.vx * dog.vx + dog.vy * dog.vy);
+                if (currentSpd > maxSpd) {
+                    dog.vx = (dog.vx / currentSpd) * maxSpd;
+                    dog.vy = (dog.vy / currentSpd) * maxSpd;
+                }
+
+                // Reibung
+                dog.vx *= 0.98;
+                dog.vy *= 0.98;
+
+                // Position aktualisieren
+                dog.x += dog.vx * dt;
+                dog.y += dog.vy * dt;
+
+                // Bounds - von Wänden abprallen
+                if (dog.x < 30) { dog.x = 30; dog.vx = Math.abs(dog.vx) * 0.8; }
+                if (dog.x > state.gameWidth - 30) { dog.x = state.gameWidth - 30; dog.vx = -Math.abs(dog.vx) * 0.8; }
+                if (dog.y < 70) { dog.y = 70; dog.vy = Math.abs(dog.vy) * 0.8; }
+                if (dog.y > state.gameHeight - 30) { dog.y = state.gameHeight - 30; dog.vy = -Math.abs(dog.vy) * 0.8; }
+
+                // Animation
+                if (dog.scared) {
+                    dogElements[i].className = 'dog dog-bounce';
+                } else if (Math.abs(dog.vx) > 0.3 || Math.abs(dog.vy) > 0.3) {
+                    dogElements[i].className = 'dog dog-bounce';
+                } else {
+                    dogElements[i].className = 'dog dog-idle';
+                }
+            });
+        }
+
+        // ============================================================
+        // Gefangene Hunde (Schlange)
+        // ============================================================
+
+        function updateCaughtDogs(dt) {
+            if (state.caughtDogs.length === 0) return;
+
+            // Erster gefangener Hund folgt dem Spieler
+            const leader = { x: state.player.x, y: state.player.y };
+            const followDist = 40;
+
+            state.caughtDogs.forEach((dog, i) => {
+                const target = i === 0 ? leader : state.caughtDogs[i - 1];
+                const dist = distance(dog.x, dog.y, target.x, target.y);
+
+                if (dist > followDist) {
+                    const angle = Math.atan2(target.y - dog.y, target.x - dog.x);
+                    const moveSpeed = Math.min(dist * 0.12, state.player.speed * 1.2);
+                    dog.x += Math.cos(angle) * moveSpeed * dt;
+                    dog.y += Math.sin(angle) * moveSpeed * dt;
+                }
+            });
+        }
+
+        // ============================================================
+        // Kollisionserkennung
+        // ============================================================
+
+        function checkCollisions() {
+            const p = state.player;
+
+            // Hunde fangen
+            for (let i = state.dogs.length - 1; i >= 0; i--) {
+                const dog = state.dogs[i];
+                const dist = distance(p.x, p.y, dog.x, dog.y);
+
+                if (dist < 40) {
+                    catchDog(i);
+                }
+            }
+
+            // Powerups sammeln
+            for (let i = state.powerups.length - 1; i >= 0; i--) {
+                const pu = state.powerups[i];
+                const dist = distance(p.x, p.y, pu.x, pu.y);
+
+                if (dist < 35) {
+                    collectPowerup(i);
+                }
+            }
+
+            // Check level complete
+            if (state.dogs.length === 0 && state.running) {
+                levelComplete();
+            }
+        }
+
+        function catchDog(index) {
+            const dog = state.dogs[index];
+
+            // Effekte
+            showCatchEffect(dog.x, dog.y, '🗂️ Sichtung erfasst');
+            showBark(dog.x, dog.y - 30);
+
+            // Punkte
+            const pointsBase = 100;
+            const speedBonus = Math.floor(dog.speed * 20);
+            const comboMultiplier = Math.min(state.caughtDogs.length + 1, 5);
+            const points = (pointsBase + speedBonus) * comboMultiplier;
+            state.score += points;
+            state.totalDogsCaught++;
+
+            // Show points
+            showPointsPopup(dog.x, dog.y - 10, `+${points}`);
+
+            // Zum Rudel hinzufügen
+            const lastPos = state.caughtDogs.length > 0
+                ? state.caughtDogs[state.caughtDogs.length - 1]
+                : state.player;
+
+            const caughtDog = {
+                x: lastPos.x,
+                y: lastPos.y,
+                emoji: dog.emoji,
+            };
+            state.caughtDogs.push(caughtDog);
+
+            // Element erstellen
+            const el = document.createElement('div');
+            el.className = 'dog caught dog-idle';
+            el.textContent = dog.emoji;
+            container.appendChild(el);
+            caughtElements.push(el);
+
+            // Altes Element entfernen
+            dogElements[index].remove();
+            dogElements.splice(index, 1);
+            state.dogs.splice(index, 1);
+        }
+
+        function collectPowerup(index) {
+            const pu = state.powerups[index];
+            state.score += 50;
+            state.player.stamina = Math.min(100, state.player.stamina + 45);
+
+            // Temporärer Geschwindigkeitsboost
+            const originalSpeed = 4;
+            state.player.speed = originalSpeed * 1.25;
+            clearTimeout(state.player._speedTimeout);
+            state.player._speedTimeout = setTimeout(() => {
+                state.player.speed = originalSpeed;
+            }, 3000);
+
+            showCatchEffect(pu.x, pu.y, '� Archiv-Boost!');
+            showPointsPopup(pu.x, pu.y - 10, '+50 ⚡ Turbo!');
+
+            powerupElements[index].remove();
+            powerupElements.splice(index, 1);
+            state.powerups.splice(index, 1);
+
+            // Spawn new one after a while
+            setTimeout(() => {
+                if (state.running && state.dogs.length > 0) {
+                    createPowerup();
+                }
+            }, 5000);
+        }
+
+        // ============================================================
+        // Level geschafft
+        // ============================================================
+
+        function levelComplete() {
+            state.running = false;
+
+            const levelTime = formatTime((Date.now() - state.levelStartTime) / 1000);
+            const timeBonus = Math.max(0, 500 - Math.floor((Date.now() - state.levelStartTime) / 1000) * 5);
+            state.score += timeBonus;
+
+            // Konfetti!
+            spawnConfetti();
+
+            if (state.level >= LEVELS.length - 1) {
+                // Spiel gewonnen!
+                setTimeout(() => showWinScreen(), 1500);
+            } else {
+                setTimeout(() => {
+                    const ls = document.getElementById('level-screen');
+                    document.getElementById('ls-dogs').textContent = state.caughtDogs.length;
+                    document.getElementById('ls-score').textContent = state.score;
+                    document.getElementById('ls-time').textContent = levelTime;
+                    ls.style.display = 'flex';
+                }, 1500);
+            }
+        }
+
+        function showWinScreen() {
+            const totalTime = formatTime((Date.now() - state.startTime) / 1000);
+            const ws = document.getElementById('win-screen');
+            document.getElementById('ws-score').textContent = state.score;
+            document.getElementById('ws-time').textContent = totalTime;
+            document.getElementById('ws-dogs').textContent = state.totalDogsCaught;
+            ws.style.display = 'flex';
+            spawnConfetti();
+        }
+
+        // ============================================================
+        // Visuelle Effekte
+        // ============================================================
+
+        function showCatchEffect(x, y, text = '🗂️ Sichtung erfasst') {
+            const effect = document.createElement('div');
+            effect.className = 'catch-effect';
+            effect.textContent = text;
+            effect.style.left = (x - 60) + 'px';
+            effect.style.top = (y - 30) + 'px';
+            container.appendChild(effect);
+            setTimeout(() => effect.remove(), 800);
+        }
+
+        function showPointsPopup(x, y, text) {
+            const popup = document.createElement('div');
+            popup.className = 'catch-effect';
+            popup.textContent = text;
+            popup.style.left = (x - 30) + 'px';
+            popup.style.top = (y - 50) + 'px';
+            popup.style.fontSize = '18px';
+            popup.style.color = '#FFD700';
+            container.appendChild(popup);
+            setTimeout(() => popup.remove(), 800);
+        }
+
+        function showBark(x, y) {
+            const bark = document.createElement('div');
+            bark.className = 'wuff-bubble';
+            bark.textContent = BARK_SOUNDS[Math.floor(Math.random() * BARK_SOUNDS.length)];
+            bark.style.left = (x - 20) + 'px';
+            bark.style.top = (y - 25) + 'px';
+            container.appendChild(bark);
+            setTimeout(() => bark.remove(), 1000);
+        }
+
+        function spawnConfetti() {
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A855F7', '#FF6347', '#00CED1', '#FFD700', '#FF69B4'];
+            for (let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const conf = document.createElement('div');
+                    conf.className = 'confetti';
+                    conf.style.left = Math.random() * 100 + '%';
+                    conf.style.top = '-10px';
+                    conf.style.width = (6 + Math.random() * 10) + 'px';
+                    conf.style.height = (6 + Math.random() * 10) + 'px';
+                    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    conf.style.animationDuration = (2 + Math.random() * 3) + 's';
+                    container.appendChild(conf);
+                    setTimeout(() => conf.remove(), 5000);
+                }, i * 30);
+            }
+        }
+
+        // ============================================================
+        // HUD & Minimap
+        // ============================================================
+
+        function updateHUD() {
+            document.getElementById('pack-count').textContent = state.caughtDogs.length;
+            document.getElementById('score').textContent = state.score;
+            document.getElementById('timer').textContent = formatTime((Date.now() - state.levelStartTime) / 1000);
+        }
+
+        function updateMinimap() {
+            minimapEl.innerHTML = '';
+            const scaleX = 150 / state.gameWidth;
+            const scaleY = 100 / state.gameHeight;
+
+            // Player
+            const pDot = document.createElement('div');
+            pDot.className = 'minimap-dot player-dot';
+            pDot.style.left = (state.player.x * scaleX - 4) + 'px';
+            pDot.style.top = (state.player.y * scaleY - 4) + 'px';
+            minimapEl.appendChild(pDot);
+
+            // Enemy dogs
+            state.dogs.forEach(dog => {
+                const dot = document.createElement('div');
+                dot.className = 'minimap-dot enemy-dot';
+                dot.style.left = (dog.x * scaleX - 3) + 'px';
+                dot.style.top = (dog.y * scaleY - 3) + 'px';
+                minimapEl.appendChild(dot);
+            });
+
+            // Caught dogs
+            state.caughtDogs.forEach(dog => {
+                const dot = document.createElement('div');
+                dot.className = 'minimap-dot caught-dot';
+                dot.style.left = (dog.x * scaleX - 3) + 'px';
+                dot.style.top = (dog.y * scaleY - 3) + 'px';
+                minimapEl.appendChild(dot);
+            });
+        }
+
+        // ============================================================
+        // Rendering
+        // ============================================================
+
+        function render() {
+            // Player
+            playerEl.style.left = (state.player.x - 24) + 'px';
+            playerEl.style.top = (state.player.y - 24) + 'px';
+
+            // Flip based on direction
+            if (state.player.vx < -0.5) {
+                playerEl.style.transform = 'scaleX(-1)';
+            } else if (state.player.vx > 0.5) {
+                playerEl.style.transform = 'scaleX(1)';
+            }
+
+            // Enemy dogs
+            state.dogs.forEach((dog, i) => {
+                if (dogElements[i]) {
+                    dogElements[i].style.left = (dog.x - 20) + 'px';
+                    dogElements[i].style.top = (dog.y - 20) + 'px';
+
+                    if (dog.vx < -0.3) {
+                        dogElements[i].style.transform = 'scaleX(-1)';
+                    } else if (dog.vx > 0.3) {
+                        dogElements[i].style.transform = 'scaleX(1)';
+                    }
+                }
+            });
+
+            // Caught dogs
+            state.caughtDogs.forEach((dog, i) => {
+                if (caughtElements[i]) {
+                    caughtElements[i].style.left = (dog.x - 18) + 'px';
+                    caughtElements[i].style.top = (dog.y - 18) + 'px';
+                }
+            });
+
+            // Powerups
+            state.powerups.forEach((pu, i) => {
+                if (powerupElements[i]) {
+                    powerupElements[i].style.left = (pu.x - 16) + 'px';
+                    powerupElements[i].style.top = (pu.y - 16) + 'px';
+                }
+            });
+        }
+
+        // ============================================================
+        // Hilfsfunktionen
+        // ============================================================
+
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // ============================================================
+        // START!
+        // ============================================================
+        init();
+    </script>
+</body>
+
+</html>
