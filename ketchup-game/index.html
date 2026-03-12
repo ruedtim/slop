@@ -14,11 +14,13 @@
             <p>Hilf Lukas, genau die richtige Menge Ketchup in die Suppe zu geben!</p>
         </div>
 
-        <div class="scene">
-            <div class="image-wrapper">
+        <div class="scene" id="gameScene">
+            <div class="image-wrapper" id="imageWrapper">
                 <img src="lukas.png" alt="Lukas gießt Ketchup" class="lukas-img" id="lukas">
                 <div class="ketchup-stream" id="ketchupStream"></div>
             </div>
+            
+            <div id="funnyTextContainer" class="funny-text-container"></div>
             
             <div class="meter-container">
                 <div class="meter-label">Ketchup Level</div>
@@ -48,7 +50,8 @@
                 <button id="retryBtn" class="retry-btn">Nochmal versuchen</button>
             </div>
         </div>
-    </div>
+
+        <div id="bloodyScreen" class="blood-screen hidden"></div>
     
     <script src="script.js"></script>
 </body>

@@ -67,6 +67,27 @@ body {
     gap: 20px;
 }
 
+/* Shake Animation Classes */
+.shake-light { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite; }
+.shake-medium { animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both infinite; }
+.shake-heavy { animation: shake 0.1s cubic-bezier(.36,.07,.19,.97) both infinite; }
+.shake-extreme { animation: heavyShake 0.05s cubic-bezier(.36,.07,.19,.97) both infinite; }
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+@keyframes heavyShake {
+  0% { transform: translate3d(-5px, -5px, 0) rotate(-2deg); }
+  25% { transform: translate3d(5px, 5px, 0) rotate(2deg); }
+  50% { transform: translate3d(-5px, 5px, 0) rotate(-4deg); }
+  75% { transform: translate3d(5px, -5px, 0) rotate(4deg); }
+  100% { transform: translate3d(-5px, -5px, 0) rotate(-2deg); }
+}
+
 .image-wrapper {
     position: relative;
     width: 100%;
@@ -80,7 +101,21 @@ body {
     width: 100%;
     height: auto;
     display: block;
-    transition: transform 0.3s ease, filter 0.3s ease;
+    transition: transform 0.1s linear, filter 0.1s linear;
+    transform-origin: 30% 30%; /* Focus on face usually */
+}
+
+/* Dynamic overlay based on ketchup amount */
+.image-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgb(255, 0, 0);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s linear;
+    z-index: 5;
+    mix-blend-mode: color;
 }
 
 .lukas-img:active {
@@ -89,6 +124,50 @@ body {
 
 .lukas-img.pouring {
     transform: scale(1.02);
+}
+
+/* Funny Text Popups */
+.funny-text-container {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 20;
+    overflow: hidden;
+}
+
+.funny-text {
+    position: absolute;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
+                 0 0 20px var(--primary-red);
+    pointer-events: none;
+    animation: floatUp 1s ease-out forwards;
+    white-space: nowrap;
+}
+
+@keyframes floatUp {
+    0% { transform: translateY(0) scale(0.5); opacity: 0; color: white; }
+    20% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+    80% { opacity: 1; color: var(--primary-red); }
+    100% { transform: translateY(-100px) scale(1.5); opacity: 0; color: darkred; }
+}
+
+/* Bloody/Explosion Screen */
+.blood-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(227, 24, 55, 1);
+    z-index: 90; /* Just below result modal */
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    mix-blend-mode: multiply;
+}
+
+.blood-screen.active {
+    opacity: 1;
 }
 
 /* Ketchup Stream Animation */
@@ -182,16 +261,16 @@ body {
 }
 
 .marker-low {
-    width: 30%; /* 0 to 30 = low */
+    width: 45%; /* 0 to 45 = low */
     border-left: none; /* first marker doesn't need border */
 }
 
 .marker-perfect {
-    width: 40%; /* 30 to 70 = perfect */
+    width: 15%; /* 45 to 60 = perfect */
 }
 
 .marker-high {
-    width: 30%; /* 70 to 100 = too sweet */
+    width: 40%; /* 60 to 100 = too sweet */
 }
 
 
