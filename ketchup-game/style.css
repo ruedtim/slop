@@ -25,7 +25,9 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: -webkit-fill-available;
     overflow: hidden;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
 .game-container {
@@ -327,6 +329,8 @@ body {
     user-select: none;
     outline: none;
     width: 100%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .pour-btn:hover {

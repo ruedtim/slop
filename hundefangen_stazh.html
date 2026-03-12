@@ -3,7 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Staatsarchiv Zürich: Fensterblick Irchelpark</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -14,8 +16,14 @@
             user-select: none;
         }
 
+        html {
+            height: -webkit-fill-available;
+        }
+
         body {
             overflow: hidden;
+            height: 100vh;
+            height: -webkit-fill-available;
             background: #1a1a2e;
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -24,6 +32,7 @@
             position: relative;
             width: 100vw;
             height: 100vh;
+            height: -webkit-fill-available;
             background: linear-gradient(180deg, #87CEEB 0%, #B0D9F0 40%, #6BAF5B 55%, #4A8A3C 70%, #3D7A32 100%);
             overflow: hidden;
         }
@@ -675,6 +684,7 @@
             display: none;
             position: absolute;
             bottom: 20px;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
             left: 50%;
             transform: translateX(-50%);
             z-index: 60;
@@ -909,8 +919,8 @@
             // Mobile Controls
             document.querySelectorAll('.mobile-btn').forEach(btn => {
                 const dir = btn.dataset.dir;
-                btn.addEventListener('touchstart', e => { e.preventDefault(); state.mobileDir[dir] = true; });
-                btn.addEventListener('touchend', e => { e.preventDefault(); state.mobileDir[dir] = false; });
+                btn.addEventListener('touchstart', e => { e.preventDefault(); state.mobileDir[dir] = true; }, { passive: false });
+                btn.addEventListener('touchend', e => { e.preventDefault(); state.mobileDir[dir] = false; }, { passive: false });
             });
 
             // Buttons

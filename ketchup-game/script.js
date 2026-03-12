@@ -37,6 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
+        // iOS Safari requires playing a silent buffer to fully unlock the audio context
+        if (!audioCtx._unlocked) {
+            audioCtx._unlocked = true;
+            const silentBuffer = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+            const source = audioCtx.createBufferSource();
+            source.buffer = silentBuffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+        }
     }
 
     function playGluckSound() {
@@ -435,10 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
     pourBtn.addEventListener('mouseup', stopPouring);
     pourBtn.addEventListener('mouseleave', stopPouring);
 
-    // Touch support
-    pourBtn.addEventListener('touchstart', startPouring);
-    pourBtn.addEventListener('touchend', stopPouring);
-    pourBtn.addEventListener('touchcancel', stopPouring);
+    // Touch support (passive: false needed so e.preventDefault() works on iOS)
+    pourBtn.addEventListener('touchstart', startPouring, { passive: false });
+    pourBtn.addEventListener('touchend', stopPouring, { passive: false });
+    pourBtn.addEventListener('touchcancel', stopPouring, { passive: false });
 
     retryBtn.addEventListener('click', resetGame);
 });
