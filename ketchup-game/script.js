@@ -20,10 +20,160 @@ document.addEventListener('DOMContentLoaded', () => {
     let isPouring = false;
     let ketchupAmount = 0;
     const maxAmount = 150; // allow overflowing to 150% for explosion
-    let currentPourRate = 0.05; // Starting Amount per tick (starts very slow)
+    let currentPourRate = 0.05; // Starting Amount per tick
     let pourInterval;
     let gameEnded = false;
     let textSpawnCounter = 0;
+
+    // AUDIO SYSTEM
+    let audioCtx;
+    let pourOscillator;
+    let pourGain;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playGluckSound() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const mod = audioCtx.createOscillator(); // FM Modulator for crazy sounds
+        const modGain = audioCtx.createGain();
+        const gain = audioCtx.createGain();
+        
+        // Crazy routing: Modulator -> ModGain -> Osc.Frequency -> Gain -> Out
+        mod.connect(modGain);
+        modGain.connect(osc.frequency);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        // "Oink goink" type sounds: Rapid pitch sweeps with FM synthesis
+        osc.type = Math.random() > 0.5 ? 'sawtooth' : 'sine';
+        mod.type = 'square';
+        
+        // Base frequency jumps around like crazy
+        const baseFreq = 100 + Math.random() * 800;
+        osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * (Math.random() > 0.5 ? 2 : 0.5), audioCtx.currentTime + 0.15);
+        
+        // Modulation depth is extreme
+        mod.frequency.value = 5 + Math.random() * 50; 
+        modGain.gain.value = 500 + Math.random() * 1000;
+        
+        // Envelope: short, harsh honk/squeak
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        
+        osc.start();
+        mod.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+        mod.stop(audioCtx.currentTime + 0.15);
+    }
+
+    function startPourSound() {
+        initAudio();
+    }
+
+    function stopPourSound() {
+        // Just rely on the interval stopping the gluck sounds
+    }
+
+    function playExplosionSound() {
+        if (!audioCtx) return;
+        const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            // White noise
+            data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = buffer;
+        
+        // Lowpass filter for explosion crunch
+        const filter = audioCtx.createBiquadFilter();
+        // A resonant sweeping filter for a laser-fart explosion
+        filter.type = 'bandpass';
+        filter.Q.value = 10;
+        filter.frequency.setValueAtTime(3000, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 2.0);
+        
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(3, audioCtx.currentTime); // LOUD
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.0);
+        
+        noiseSource.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        // Also add a massive sub-bass drop
+        const osc = audioCtx.createOscillator();
+        const oscGain = audioCtx.createGain();
+        osc.connect(oscGain);
+        oscGain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 2.0);
+        oscGain.gain.setValueAtTime(2, audioCtx.currentTime);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.0);
+
+        noiseSource.start();
+        osc.start();
+        noiseSource.stop(audioCtx.currentTime + 2.0);
+        osc.stop(audioCtx.currentTime + 2.0);
+    }
+
+    function playWinSound() {
+        if (!audioCtx) return;
+        // Hyperactive manic arpeggio
+        const noteFreqs = [440, 554, 659, 880, 1108, 1318, 1760]; 
+        for(let i=0; i<20; i++) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.value = noteFreqs[Math.floor(Math.random() * noteFreqs.length)];
+            
+            const startTime = audioCtx.currentTime + (i * 0.05);
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+            
+            osc.start(startTime);
+            osc.stop(startTime + 0.1);
+        }
+    }
+
+    function playFailSound() {
+        if (!audioCtx) return;
+        // Horrible dissonant "waaaaaah" sound
+        const freqs = [150, 155, 145]; // Beating frequencies
+        freqs.forEach((freq, index) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth';
+            
+            osc.frequency.setValueAtTime(freq * 3, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq, audioCtx.currentTime + 1.5);
+            
+            // Wobbly volume
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
+            gain.gain.setTargetAtTime(0, audioCtx.currentTime + 0.5, 0.5);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 2);
+        });
+    }
 
     const funnyTexts = [
         "Mehr!", 
@@ -37,27 +187,38 @@ document.addEventListener('DOMContentLoaded', () => {
         "Gluck gluck gluck..."
     ];
 
-    // Thresholds
-    const minThreshold = 45;
-    const maxThreshold = 60;
+    // Thresholds - BRUTALLY DIFFICULT
+    const minThreshold = 50;
+    const maxThreshold = 54; // Doubled window (4% instead of 2%)
     const explosionThreshold = 100;
 
     function startPouring(e) {
         if (gameEnded) return;
         if (e.type === 'touchstart') e.preventDefault(); // Prevent double firing on mobile
 
+        initAudio(); // Required by browsers to start audio context on user interaction
         isPouring = true;
-        currentPourRate = 0.05; // Reset pour rate
+        currentPourRate = 0.01; // Start slow but accelerate INSANELY fast
         
         pourBtn.classList.add('active');
         lukasImg.classList.add('pouring');
         ketchupStream.classList.add('active');
+        startPourSound();
+        
+        let gluckCounter = 0;
 
         pourInterval = setInterval(() => {
             if (isPouring) {
-                // Accelerate the pour rate exponentially!
-                currentPourRate *= 1.05;
+                // Accelerate the pour rate exponentially AND rapidly!
+                currentPourRate *= 1.15; // 15% increase per tick (insanely fast)
                 ketchupAmount += currentPourRate;
+                
+                // Play chaotic sounds based on amount and rate
+                gluckCounter += currentPourRate;
+                if (gluckCounter > (Math.random() * 3 + 1)) {
+                    playGluckSound();
+                    gluckCounter = 0;
+                }
                 
                 updateEffects();
                 
@@ -131,6 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameEnded) return;
         gameEnded = true;
         
+        playExplosionSound();
+        
         bloodyScreen.classList.remove('hidden');
         bloodyScreen.classList.add('active');
         gameScene.classList.add('shake-extreme');
@@ -145,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isPouring = false;
         clearInterval(pourInterval);
+        stopPourSound();
         
         pourBtn.classList.remove('active');
         lukasImg.classList.remove('pouring');
@@ -159,9 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const cappedAmount = Math.min(ketchupAmount, 100);
         ketchupMeter.style.width = `${cappedAmount}%`;
         
-        // Add a chaotic glitch effect to the meter to make it harder to read near the explosion limit
-        if (ketchupAmount > 30) {
-            const jitterAmount = Math.min(10, ketchupAmount / 8); 
+        // Add a chaotic glitch effect to the meter to make it extremely hard to read
+        if (ketchupAmount > 10) {
+            const jitterAmount = Math.min(50, ketchupAmount); 
             const jitterX = (Math.random() * jitterAmount) - (jitterAmount/2);
             ketchupMeter.style.transform = `translateX(${jitterX}px)`;
         } else {
@@ -189,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (amountDisplay < minThreshold) {
             // Too little
+            playFailSound();
             resultOverlay.classList.add('result-bland');
             resultTitle.textContent = 'Viel zu fad!';
             resultText.textContent = `Nur ${amountDisplay}% Ketchup? Das schmeckt nach nichts. Da muss mehr Heinz rein!`;
@@ -196,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ratingStars.style.color = 'var(--text-muted)';
         } else if (amountDisplay <= maxThreshold) {
             // Perfect
+            playWinSound();
             resultOverlay.classList.add('result-perfect');
             resultTitle.textContent = 'Perfekte Suppe!';
             resultText.textContent = `Genau richtig! ${amountDisplay}% Ketchup ist die perfekte Balance. Lukas ist stolz auf dich.`;
@@ -205,6 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Trigger confetti or something here if we had a library
         } else if (amountDisplay < explosionThreshold) {
             // Too sweet
+            playFailSound();
             resultOverlay.classList.add('result-sweet');
             resultTitle.textContent = 'Leider versaut!';
             resultText.textContent = `${amountDisplay}% Ketchup? Das ist keine Suppe mehr, das ist Ketchup pur! Viel zu süß.`;
@@ -232,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetGame() {
         gameEnded = false;
         ketchupAmount = 0;
-        currentPourRate = 0.05;
+        currentPourRate = 0.01;
         textSpawnCounter = 0;
         
         ketchupMeter.style.transform = 'translateX(0)';
