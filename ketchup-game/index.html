@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ketchup Suppen Spiel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>Die Perfekte Suppe</h1>
+            <p>Hilf Lukas, genau die richtige Menge Ketchup in die Suppe zu geben!</p>
+        </div>
+
+        <div class="scene" id="gameScene">
+            <div class="image-wrapper" id="imageWrapper">
+                <img src="lukas.png" alt="Lukas gießt Ketchup" class="lukas-img" id="lukas">
+                <div class="ketchup-stream" id="ketchupStream"></div>
+            </div>
+            
+            <div id="funnyTextContainer" class="funny-text-container"></div>
+            
+            <div class="meter-container">
+                <div class="meter-label">Ketchup Level</div>
+                <div class="meter-bg">
+                    <div class="meter-fill" id="ketchupMeter"></div>
+                    <div class="meter-markers">
+                        <div class="marker marker-low">Zu wenig</div>
+                        <div class="marker marker-perfect">Perfekt</div>
+                        <div class="marker marker-high">Zu süß!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="pourBtn" class="pour-btn">
+                <span class="btn-text">DRÜCKEN & HALTEN</span>
+                <span class="btn-subtext">für mehr Ketchup</span>
+            </button>
+        </div>
+
+        <div id="resultOverlay" class="result-overlay hidden">
+            <div class="result-modal">
+                <h2 id="resultTitle">Ergebnis</h2>
+                <p id="resultText">Du hast X% Ketchup hinzugefügt.</p>
+                <div class="rating-stars" id="ratingStars"></div>
+                <button id="retryBtn" class="retry-btn">Nochmal versuchen</button>
+            </div>
+        </div>
+
+        <div id="bloodyScreen" class="blood-screen hidden"></div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
